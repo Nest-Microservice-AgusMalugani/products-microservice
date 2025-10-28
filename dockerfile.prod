@@ -1,0 +1,46 @@
+
+#DEPENDENCIAS
+FROM node:21-alpine3.19 as deps
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm i
+
+#BUILDER
+FROM node:21-alpine3.19 as build
+WORKDIR /usr/src/app
+
+#copiar de deps los modulos de node
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+
+#copiar todo el codigo fuente de la app
+COPY . .
+
+RUN npm run build
+
+#Esto va a limpiar las dependencias que no sean necesarias para produccion y va a hacer que sea mas liviana la imagen
+RUN npm ci -f --only=production && npm cache clean --force
+
+RUN npx prisma generate
+
+
+# CREACION DE LA IMAGEN DE PRODUCCION
+FROM node:21-alpine3.19 as prod
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/node_modules ./node_modules
+#copiar carpeta de dist
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/generated ./generated
+COPY --from=build /usr/src/app/prisma ./prisma
+
+ENV NODE_ENV=production
+
+#esto le saca privilegios por si alguien quiere borrar codigo o algo
+USER node 
+
+EXPOSE 3000
+
+CMD [ "node", "dist/main.js" ]
