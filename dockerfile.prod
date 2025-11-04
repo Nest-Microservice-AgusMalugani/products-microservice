@@ -18,12 +18,12 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 #copiar todo el codigo fuente de la app
 COPY . .
 
+RUN npx prisma generate
 RUN npm run build
 
 #Esto va a limpiar las dependencias que no sean necesarias para produccion y va a hacer que sea mas liviana la imagen
 RUN npm ci -f --only=production && npm cache clean --force
 
-RUN npx prisma generate
 
 
 # CREACION DE LA IMAGEN DE PRODUCCION
