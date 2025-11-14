@@ -15,14 +15,22 @@ private readonly logger = new Logger("ProductsService")
     
   }
   async create(createProductDto: CreateProductDto) {
-
-    return await this.product.create({
+    try{
+    const product = await this.product.create({
       data: createProductDto
-    })
+    }) 
+    return product;
+    }catch(e){
+      throw new RpcException({
+        status:400,
+        message: e.message
+      })
+    }
+  
   }
 
   async findAll(pagination: PaginationDto) {
-
+try{
 let { page, limit } = pagination;
 
 if(!page || !limit) {
@@ -47,13 +55,20 @@ const products = await this.product.findMany({
         totalPages: Math.ceil(totalPage / limit),
       } 
     };
+  }catch(e){
+      throw new RpcException({
+        status:400,
+        message: e.message
+      })
+    }
   }
 
   async findOne(id: number) {
-
+try{
     const product = await this.product.findUnique({
       where: {id}
     })
+
     if(!product) {
       throw new RpcException({
         status:HttpStatus.BAD_REQUEST,
@@ -61,7 +76,14 @@ const products = await this.product.findMany({
       })
     }
     return product;
-}
+}catch(e){
+      throw new RpcException({
+        status:400,
+        message: e.message
+      })
+    }
+
+  }
 
   update(id: number, updateProductDto: UpdateProductDto) {
     const{id: _,...data} = updateProductDto
@@ -76,6 +98,7 @@ const products = await this.product.findMany({
 
 async validateProducts(productsId: number[]){
   
+  try{
 const ids= Array.from(new Set(productsId));
 
 const products = await this.product.findMany({
@@ -94,6 +117,13 @@ if(ids.length !== products.length){
 }
 
 return products
+}catch(e){
+      throw new RpcException({
+        status:400,
+        message: e.message
+      })
+    }
+
 }
 
 }
